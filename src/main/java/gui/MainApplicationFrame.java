@@ -7,10 +7,11 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainApplicationFrame extends JFrame {
     private final JDesktopPane desktopPane = new JDesktopPane();
-
 
     public MainApplicationFrame() {
         //Make the big window be indented 50 pixels from each edge
@@ -20,11 +21,8 @@ public class MainApplicationFrame extends JFrame {
         setBounds(inset, inset,
                 screenSize.width - inset * 2,
                 screenSize.height - inset * 2);
-        UIManager.put("OptionPane.yesButtonText", "Да");
-        UIManager.put("OptionPane.noButtonText", "Нет");
 
         setContentPane(desktopPane);
-
 
         LogWindow logWindow = createLogWindow();
         addWindow(logWindow);
@@ -33,27 +31,26 @@ public class MainApplicationFrame extends JFrame {
         gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
+        List<JInternalFrame> windows = new ArrayList<>();
+        windows.add(logWindow);
+        windows.add(gameWindow);
+
+        WindowsStateController.resetState(windows);
+
         setJMenuBar(generateMenuBar());
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        addWindowListener(new WindowAdapter()
-        {
-            public void windowClosing(WindowEvent event)
-            {
-                showConfirmationExitDialogWindow(event);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                int reply = JOptionPane.showConfirmDialog(null,
+                        "Really Quit?", "Quit", JOptionPane.YES_NO_OPTION);
+                if (reply == JOptionPane.YES_OPTION) {
+                    WindowsStateController.saveStates(windows);
+                    System.exit(0);
+                }
             }
         });
-    }
-
-    private void showConfirmationExitDialogWindow(WindowEvent event){
-        Object[] options = {"Да", "Нет"};
-        int n = JOptionPane.showOptionDialog(event.getWindow(), "Закрыть окно?",
-                "Подтверждение выхода", JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-        if (n == 0) {
-            event.getWindow().setVisible(false);
-            System.exit(0);
-        }
     }
 
     protected LogWindow createLogWindow() {
@@ -70,7 +67,6 @@ public class MainApplicationFrame extends JFrame {
         desktopPane.add(frame);
         frame.setVisible(true);
     }
-
 
     private JMenuBar generateMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -98,7 +94,7 @@ public class MainApplicationFrame extends JFrame {
 
         Menu exitMenu = new Menu("Выход", "Выход из приложения", KeyEvent.VK_Q);
 
-        exitMenu.createMenuItem("Закрытие приложения", (event) -> {
+        exitMenu.createMenuItem("Выход", (event) -> {
             Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(
                     new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
         }, KeyEvent.VK_X);
